@@ -5,7 +5,41 @@ ENCODER = {char: code for code, char in enumerate(ICFP_CHARSET)}
 
 
 def encode_string(msg: str) -> str:
-    return 'S' + ''.join(encode_char(char) for char in msg)
+    tokens = []
+    chars = []
+    raw = False
+    for char in msg:
+        if char == '{':
+            if chars:
+                if tokens:
+                    last_token = tokens.pop()
+                    tokens.append("B.")
+                    tokens.append(last_token)
+                tokens.append('S' + ''.join(encode_char(char) for char in chars))
+                chars = []
+            raw = True
+        elif char == '}':
+            if chars:
+                if tokens:
+                    last_token = tokens.pop()
+                    tokens.append("B.")
+                    tokens.append(last_token)
+                tokens.append(''.join(chars))
+                chars = []
+            raw = False
+        else:
+            chars.append(char)
+    if chars:
+        if tokens:
+            last_token = tokens.pop()
+            tokens.append("B.")
+            tokens.append(last_token)
+        if raw:
+            tokens.append(''.join(chars))
+        else:
+            tokens.append('S' + ''.join(encode_char(char) for char in chars))
+
+    return ' '.join(tokens)
 
 
 def encode_int(value: int) -> str:
