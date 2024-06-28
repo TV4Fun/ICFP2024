@@ -15,10 +15,13 @@ while True:
         command = input("> ")
         if not command:
             continue
-        payload = encode_string(command)
+        if command.startswith("!"):
+            payload = command[1:]
+        else:
+            payload = encode_string(command)
         response = requests.post(URL, data=payload, headers=AUTH_HEADER)
         print(decode_message(response.text))
     except (KeyboardInterrupt, EOFError):
         exit(0)
-    except:
+    except Exception as e:
         print_exc()
