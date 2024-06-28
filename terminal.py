@@ -11,12 +11,17 @@ AUTH_HEADER = {
 }
 
 while True:
-    command = input("> ")
-    if not command:
-        continue
-    if command.startswith("!"):
-        payload = command[1:]
-    else:
-        payload = encode_string(command)
-    response = requests.post(URL, data=payload, headers=AUTH_HEADER)
-    print(decode_message(response.text))
+    try:
+        command = input("> ")
+        if not command:
+            continue
+        if command.startswith("!"):
+            payload = command[1:]
+        else:
+            payload = encode_string(command)
+        response = requests.post(URL, data=payload, headers=AUTH_HEADER)
+        print(decode_message(response.text))
+    except (KeyboardInterrupt, EOFError):
+        exit(0)
+    except Exception as e:
+        print_exc()
