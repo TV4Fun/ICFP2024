@@ -1,3 +1,5 @@
+from .util import format_error
+
 ICFP_CHARSET = """abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&'()*+,-./:;<=>?@[\\]^_`|~ \n"""
 
 
@@ -23,7 +25,7 @@ def decode_token(token: str):
     elif indicator == 'S':
         return decode_string(body)
     else:
-        raise NotImplementedError(f"Unsupported token type: {indicator}")
+        return format_error(f"Unsupported token type: {token}")
 
 
 def decode_int(body: str) -> int:

@@ -13,6 +13,8 @@ AUTH_HEADER = {
 while True:
     try:
         command = input("> ")
+        if not command:
+            continue
         payload = encode_string(command)
         response = requests.post(URL, data=payload, headers=AUTH_HEADER)
         print(decode_message(response.text))
