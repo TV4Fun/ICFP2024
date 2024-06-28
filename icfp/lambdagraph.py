@@ -43,4 +43,21 @@ for node in nodes:
 G = nx.from_dict_of_lists(G)
 H = nx.approximation.traveling_salesman_problem(G, cycle=False)
 
-print(H)
+def stringify(path):
+    nodes = path
+    origin = nodes.pop()
+    string = ""
+    while nodes:
+        next = H.pop()
+        if origin[0] - next[0] == 1:
+            string += "R"
+        elif origin[0] - next[0] == -1:
+            string += "L"
+        elif origin[1] - next[1] == 1:
+            string += "U"
+        else:
+            string += "D"
+        origin = next
+
+    return string
+print(stringify(H))
