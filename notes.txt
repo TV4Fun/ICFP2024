@@ -75,3 +75,12 @@ Your score is number of bytes that the ICFP expressions consists of (i.e. the si
 ###.#...
 ...L..##
 .#######
+
+(B$ (L# (B$ (L" (B+ v" v")) (B* I$ I#))) v8)
+B$ L" B+ v" v" B* I$ I#
+B+ B* I$ I# B* I$ I#
+B+ I' B* I$ I#
+B+ I' I'
+I-
+
+(B$ (B$ (L# (L$ v#)) (B. SB%,,/ S}Q/2,$_)) IK)
