@@ -25,7 +25,7 @@ def decode_token(token: str):
     elif indicator == 'S':
         return decode_string(body)
     else:
-        return format_error(f"Unsupported token type: {token}")
+        return format_error(f"Unsupported token type: {token}\n")
 
 
 def decode_int(body: str) -> int:
