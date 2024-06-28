@@ -30,7 +30,7 @@ def decode_int(body: str) -> int:
     result = 0
     for digit in body:
         result *= 94
-        result += decode_int(digit)
+        result += decode_digit(digit)
     return result
 
 
