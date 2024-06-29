@@ -12,7 +12,13 @@ while True:
     command = input("> ")
     if not command:
         continue
+    print_raw = False
+    if command.startswith('!'):
+        print_raw = True
+        command = command[1:]
+
     payload = encode_and_compile(command)
     response = requests.post(URL, data=payload, headers=AUTH_HEADER)
-    # print(response.text)
+    if print_raw:
+        print(response.text)
     print(decode_message(response.text))
