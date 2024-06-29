@@ -1,9 +1,8 @@
 from functools import partial
 from typing import Callable
 
-from .util import print_error
-
-ICFP_CHARSET = """abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&'()*+,-./:;<=>?@[\\]^_`|~ \n"""
+from .util import print_error, ICFP_CHARSET
+from .encode import encode_string, encode_int
 
 
 def decode_message(msg: str) -> str:
@@ -38,20 +37,20 @@ def parse_token(token: str) -> tuple[int, Callable]:
         if indicator == 'T':
             return 0, lambda **kwargs: True
         else:
-            return 1, lambda **kwargs: False
+            return 0, lambda **kwargs: False
     elif indicator == 'I':
-        return 0, lambda *, s=body, raw=False, **kwargs: s if raw else decode_int(s)
+        return 0, lambda *, s=body, **kwargs: decode_int(s)
     elif indicator == 'S':
-        return 0, lambda *, s=body, raw=False, **kwargs: s if raw else decode_string(s)
+        return 0, lambda *, s=body, **kwargs: decode_string(s)
     elif indicator == 'U':
         if body == '-':
             return 1, lambda i, **kwargs: -i(**kwargs)
         elif body == '!':
             return 1, lambda x, **kwargs: not x(**kwargs)
         elif body == '#':
-            return 1, lambda s, **kwargs: decode_int(s(raw=True, **kwargs))
+            return 1, lambda s, **kwargs: decode_int(encode_string(s(**kwargs)))
         elif body == '$':
-            return 1, lambda s, **kwargs: decode_string(s(raw=True, **kwargs))
+            return 1, lambda n, **kwargs: decode_string(encode_int(n(**kwargs)))
         else:
             print_error(f"Unrecognized unary operator: {body}")
     elif indicator == 'B':
@@ -62,11 +61,17 @@ def parse_token(token: str) -> tuple[int, Callable]:
         elif body == '*':
             return 2, lambda x, y, **kwargs: x(**kwargs) * y(**kwargs)
         elif body == '/':
-            return 2, lambda x, y, **kwargs: x(**kwargs) // y(**kwargs)
+            return 2, lambda x, y, **kwargs: int(x(**kwargs) / y(**kwargs))
         elif body == '%':
-            # FIXME: Examples give signed modulo, which is not how Python does it. Not sure if this will make a
-            #  difference or not
-            return 2, lambda x, y, **kwargs: x(**kwargs) % y(**kwargs)
+            def stupid_mod(x, y, **kwargs):
+                x_val = x(**kwargs)
+                y_val = y(**kwargs)
+                result = x_val % y_val
+                if x_val < 0:
+                    result -= y_val
+
+                return result
+            return 2, stupid_mod
         elif body == '<':
             return 2, lambda x, y, **kwargs: x(**kwargs) < y(**kwargs)
         elif body == '>':
@@ -84,7 +89,7 @@ def parse_token(token: str) -> tuple[int, Callable]:
         elif body == 'D':
             return 2, lambda x, y, **kwargs: y(**kwargs)[x(**kwargs):]
         elif body == '$':
-            return 2, lambda f, x, *, vs={}, **kwargs: f(**kwargs)(x, vs=vs, **kwargs)
+            return 2, lambda f, x, **kwargs: f(**kwargs)(x, **kwargs)
         else:
             print_error(f"Unrecognized binary operator: {body}")
     elif indicator == '?':

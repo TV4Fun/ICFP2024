@@ -19,7 +19,7 @@ class DecoderTests(unittest.TestCase):
 
     def test_indirect_call(self):
         self.assertEqual("42", decode.decode_message("B$ B$ L# L$ v$ S- IK"))
-        self.assertEqual("42", decode.decode_message("B$ B$ L# L$ v# S- IK"))
+        self.assertEqual("Hello", decode.decode_message("B$ B$ L# L$ v# SB%,,/ IK"))
 
     def test_nested_call(self):
         self.assertEqual("12", decode.decode_message("I-"))
@@ -34,6 +34,29 @@ class DecoderTests(unittest.TestCase):
         self.assertIn("function", decode.decode_message("B$ L# L$ v# IK"))
         self.assertIn("function", decode.decode_message("B$ L# L$ v$ IK"))
         self.assertIn("function", decode.decode_message("B$ L# L$ v4 IK"))
+
+    def test_if(self):
+        self.assertEqual("no", decode.decode_message("? B> I# I$ S9%3 S./"))
+
+    def test_mod(self):
+        # Do mod in stupid unmathematical way
+        self.assertEqual("-1", decode.decode_message("B% U- I( I#"))
+
+    def test_divide(self):
+        # Division needs to truncate towards zero and not floor
+        self.assertEqual("3", decode.decode_message("B/ I( I#"))
+        self.assertEqual("-3", decode.decode_message("B/ U- I( I#"))
+
+    def test_multiply(self):
+        self.assertEqual("6", decode.decode_message("B* I$ I#"))
+
+    def test_int_to_string(self):
+        self.assertEqual("test", decode.decode_message("U$ I4%34"))
+        self.assertEqual("c", decode.decode_message("U$ B+ I\" I\""))
+
+    def test_string_to_int(self):
+        self.assertEqual("15818151", decode.decode_message("U# S4%34"))
+        self.assertEqual("15818151", decode.decode_message("U# B. S4% S34"))
 
 
 if __name__ == '__main__':
