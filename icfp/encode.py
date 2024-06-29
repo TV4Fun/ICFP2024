@@ -4,7 +4,7 @@ from .common import ICFP_CHARSET
 ENCODER = {char: code for code, char in enumerate(ICFP_CHARSET)}
 
 
-def encode_and_compile(msg: str) -> str:
+def encode_message(msg: str) -> str:
     tokens = []
     chars = []
     raw = False
