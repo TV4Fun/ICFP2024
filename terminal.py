@@ -6,9 +6,7 @@ from icfp.decode import decode_message
 
 
 URL = "https://boundvariable.space/communicate"
-AUTH_HEADER = {
-    "Authorization": "Bearer f8fb3b34-7f8f-4cb0-bd74-c83be464d0a1"
-}
+AUTH_HEADER = {"Authorization": "Bearer f8fb3b34-7f8f-4cb0-bd74-c83be464d0a1"}
 
 while True:
     try:
