@@ -38,6 +38,10 @@ class DecoderTests(unittest.TestCase):
     def test_if(self):
         self.assertEqual("no", decode.decode_message("? B> I# I$ S9%3 S./"))
 
+    def test_mod(self):
+        # Do mod in stupid unmathematical way
+        self.assertEqual("-1", decode.decode_message("B% U- I( I#"))
+
 
 if __name__ == '__main__':
     unittest.main()

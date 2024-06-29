@@ -66,7 +66,15 @@ def parse_token(token: str) -> tuple[int, Callable]:
         elif body == '%':
             # FIXME: Examples give signed modulo, which is not how Python does it. Not sure if this will make a
             #  difference or not
-            return 2, lambda x, y, **kwargs: x(**kwargs) % y(**kwargs)
+            def stupid_mod(x, y, **kwargs):
+                x_val = x(**kwargs)
+                y_val = y(**kwargs)
+                result = x_val % y_val
+                if x_val < 0:
+                    result -= y_val
+
+                return result
+            return 2, stupid_mod
         elif body == '<':
             return 2, lambda x, y, **kwargs: x(**kwargs) < y(**kwargs)
         elif body == '>':
