@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Callable
 
-from .util import print_error, ICFP_CHARSET
+from .common import print_error, ICFP_CHARSET
 from .encode import encode_string, encode_int
 
 

@@ -1,4 +1,4 @@
-from .util import ICFP_CHARSET
+from .common import ICFP_CHARSET
 
 
 ENCODER = {char: code for code, char in enumerate(ICFP_CHARSET)}
