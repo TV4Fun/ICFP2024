@@ -11,7 +11,7 @@ current_dir = Path(__file__).resolve().parent
 parent_dir = current_dir.parent
 sys.path.append(str(parent_dir))
 
-from icfp.encode import encode_string
+from icfp.encode import encode_and_compile
 from icfp.decode import decode_message
 import find_optimal_path as snl
 
@@ -20,7 +20,7 @@ AUTH_HEADER = {"Authorization": "Bearer f8fb3b34-7f8f-4cb0-bd74-c83be464d0a1"}
 
 
 def send_command(command: str) -> str:
-    payload = encode_string(command)
+    payload = encode_and_compile(command)
     response = requests.post(URL, data=payload, headers=AUTH_HEADER)
     return decode_message(response.text)
 
@@ -29,9 +29,8 @@ def get_spaceship_coordinates(ship_number: int) -> str:
     return send_command(f"get spaceship{ship_number}")
 
 
-def solve_spaceship(ship_number: int, path: List[int]):
-    path_str = "".join(map(str, path))
-    send_command(f"solve spaceship{ship_number} {path_str}")
+def solve_spaceship(ship_number: int, path: str):
+    send_command(f"solve spaceship{ship_number} {path}")
 
 
 def main():
