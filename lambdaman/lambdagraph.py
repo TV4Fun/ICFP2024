@@ -2,12 +2,25 @@ import numpy as np
 import networkx as nx
 
 lambda_map = """
-L...#.
-#.#.#.
-##....
-...###
-.##..#
-....##
+#...#.#.........#...
+#.###.#.#####.###.##
+#...#.#.....#.......
+###.#.#.###.########
+#.#....L..#.#.......
+#.#####.###.#.###.##
+#.#.#...#.......#...
+#.#.#######.#######.
+#.#...#.#...#.#.....
+#.#.###.#.###.###.#.
+#.....#...#.......#.
+#.###.###.###.#####.
+#.#.#...#...#...#...
+###.#.#.#.#####.###.
+#...#.#...#.....#...
+#.###.#.#.#####.####
+#.....#.#.....#.#...
+#.###.#.#.#.#.#.#.##
+#.#...#.#.#.#.#.....
 """
 
 lambda_map = lambda_map.split("\n")
@@ -41,23 +54,25 @@ for node in nodes:
     G[node] = neighbors
 
 G = nx.from_dict_of_lists(G)
-H = nx.approximation.traveling_salesman_problem(G, cycle=False)
+path = nx.approximation.traveling_salesman_problem(G, cycle=False)
 
 def stringify(path):
     nodes = path
+
     origin = nodes.pop()
     string = ""
     while nodes:
-        next = H.pop()
+        next = nodes.pop()
         if origin[0] - next[0] == 1:
-            string += "R"
-        elif origin[0] - next[0] == -1:
-            string += "L"
-        elif origin[1] - next[1] == 1:
             string += "U"
-        else:
+        elif origin[0] - next[0] == -1:
             string += "D"
+        elif origin[1] - next[1] == 1:
+            string += "L"
+        else:
+            string += "R"
         origin = next
 
     return string
-print(stringify(H))
+
+print(stringify(path))
