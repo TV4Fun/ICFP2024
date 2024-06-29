@@ -1,6 +1,8 @@
 import math
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 import heapq
+import requests
+from collections import defaultdict
 
 # Define the keypad controls and their effects on velocity
 CONTROLS = {
@@ -20,7 +22,7 @@ def manhattan_distance(p1: Tuple[int, int], p2: Tuple[int, int]) -> int:
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 
-def reconstruct_path(came_from: Dict, current: Tuple) -> List[int]:
+def reconstruct_path(came_from: dict, current: Tuple) -> List[int]:
     path = []
     while current in came_from:
         current, action = came_from[current]
@@ -28,62 +30,32 @@ def reconstruct_path(came_from: Dict, current: Tuple) -> List[int]:
     return path[::-1]
 
 
-def prim_mst(coordinates: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    num_points = len(coordinates)
-    if num_points == 0:
+def nearest_neighbor_tsp(coordinates: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    if not coordinates:
         return []
 
-    mst_edges = []
-    in_mst = [False] * num_points
-    edge_heap = []
+    unvisited = set(range(len(coordinates)))
+    current_index = 0
+    tour = [coordinates[current_index]]
+    unvisited.remove(current_index)
 
-    def add_edges(point_index: int):
-        in_mst[point_index] = True
-        for i in range(num_points):
-            if not in_mst[i]:
-                distance = manhattan_distance(coordinates[point_index], coordinates[i])
-                heapq.heappush(edge_heap, (distance, point_index, i))
+    while unvisited:
+        nearest_index = min(
+            unvisited,
+            key=lambda idx: manhattan_distance(
+                coordinates[current_index], coordinates[idx]
+            ),
+        )
+        tour.append(coordinates[nearest_index])
+        unvisited.remove(nearest_index)
+        current_index = nearest_index
 
-    add_edges(0)
-
-    while edge_heap and len(mst_edges) < num_points - 1:
-        distance, u, v = heapq.heappop(edge_heap)
-        if not in_mst[v]:
-            mst_edges.append((u, v))
-            add_edges(v)
-
-    return mst_edges
-
-
-def get_mst_order(
-    coordinates: List[Tuple[int, int]], mst_edges: List[Tuple[int, int]]
-) -> List[Tuple[int, int]]:
-    from collections import defaultdict
-
-    neighbors = defaultdict(list)
-    for u, v in mst_edges:
-        neighbors[u].append(v)
-        neighbors[v].append(u)
-
-    visited = set()
-    order = []
-
-    def dfs(node):
-        order.append(node)
-        visited.add(node)
-        for neighbor in neighbors[node]:
-            if neighbor not in visited:
-                dfs(neighbor)
-
-    dfs(0)
-    return [coordinates[i] for i in order]
+    return tour
 
 
 def navigate(coordinates: List[Tuple[int, int]]) -> str:
-    # Include the starting point (0, 0)
     coordinates = [(0, 0)] + coordinates
-    mst_edges = prim_mst(coordinates)
-    ordered_coordinates = get_mst_order(coordinates, mst_edges)
+    ordered_coordinates = nearest_neighbor_tsp(coordinates)
 
     full_path = []
     start = (0, 0, 0, 0)  # (x, y, vx, vy)
