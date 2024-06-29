@@ -2,28 +2,23 @@ import numpy as np
 import networkx as nx
 from itertools import product
 
-lambda_map = """
-.....########...
-....#...........
-...#..######....
-..#..#......#...
-.#..#...##...#..
-.#..#..#L.#...#.
-.#...#....#...#.
-..#...####...#..
-...#........#...
-....########....
-................
-"""
+map_file = "lambdaman5.txt"
 
-lambda_list = lambda_map.split("\n")
-lambda_list = [[c for c in line] for line in lambda_list if line]
-lambda_map = np.array(lambda_list)
+with open(map_file) as f:
+    lines = f.read().splitlines()
 
-lambda_man = np.where(lambda_map == "L")
-lambda_man = (int(lambda_man[0][0]), int(lambda_man[1][0]))
+for row, line in enumerate(lines):
+    for col, char in enumerate(line):
+        if char == "L":
+            lambda_man = (row, col)
+            break
+    else:
+        continue
+    break
+lambda_map = np.array([[c == "#" for c in line] for line in lines], dtype=np.bool)
 
-nodes = [(int(x), int(y)) for x, y in zip(np.where(lambda_map == ".")[0], np.where(lambda_map == ".")[1])]
+nodes = [(int(x), int(y)) for x, y in zip(*np.nonzero(np.logical_not(lambda_map)))]
+
 def find_neighbors(node):
     neighbors = []
     possibilities = [[node[0] + 1, node[1]], [node[0], node[1] + 1], [node[0] - 1, node[1]], [node[0], node[1] - 1]]
@@ -33,7 +28,7 @@ def find_neighbors(node):
         if option[0] > lambda_map.shape[0] - 1 or option[1] > lambda_map.shape[1] - 1:
             continue
         neighbor = lambda_map[option[0]][option[1]]
-        if neighbor == ".":
+        if not neighbor:
             neighbors.append(tuple(option))
     return neighbors
 
