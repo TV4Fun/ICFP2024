@@ -42,6 +42,11 @@ class DecoderTests(unittest.TestCase):
         # Do mod in stupid unmathematical way
         self.assertEqual("-1", decode.decode_message("B% U- I( I#"))
 
+    def test_divide(self):
+        # Division needs to truncate towards zero and not floor
+        self.assertEqual("3", decode.decode_message("B/ I( I#"))
+        self.assertEqual("-3", decode.decode_message("B/ U- I( I#"))
+
 
 if __name__ == '__main__':
     unittest.main()

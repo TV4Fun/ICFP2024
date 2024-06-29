@@ -62,7 +62,7 @@ def parse_token(token: str) -> tuple[int, Callable]:
         elif body == '*':
             return 2, lambda x, y, **kwargs: x(**kwargs) * y(**kwargs)
         elif body == '/':
-            return 2, lambda x, y, **kwargs: x(**kwargs) // y(**kwargs)
+            return 2, lambda x, y, **kwargs: int(x(**kwargs) / y(**kwargs))
         elif body == '%':
             # FIXME: Examples give signed modulo, which is not how Python does it. Not sure if this will make a
             #  difference or not
