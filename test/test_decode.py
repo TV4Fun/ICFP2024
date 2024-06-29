@@ -35,6 +35,9 @@ class DecoderTests(unittest.TestCase):
         self.assertIn("function", decode.decode_message("B$ L# L$ v$ IK"))
         self.assertIn("function", decode.decode_message("B$ L# L$ v4 IK"))
 
+    def test_if(self):
+        self.assertEqual("no", decode.decode_message("? B> I# I$ S9%3 S./"))
+
 
 if __name__ == '__main__':
     unittest.main()

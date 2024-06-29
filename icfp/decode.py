@@ -38,7 +38,7 @@ def parse_token(token: str) -> tuple[int, Callable]:
         if indicator == 'T':
             return 0, lambda **kwargs: True
         else:
-            return 1, lambda **kwargs: False
+            return 0, lambda **kwargs: False
     elif indicator == 'I':
         return 0, lambda *, s=body, raw=False, **kwargs: s if raw else decode_int(s)
     elif indicator == 'S':
