@@ -18,13 +18,18 @@ def tokenize(msg: str) -> list[str]:
 
 
 def parse_token_tree(tokens: list[str], idx: int) -> tuple[int, Callable]:
-    n_args, f = parse_token(tokens[idx])
+    token = tokens[idx]
+    idx_orig = idx
+    n_args, f = parse_token(token)
     idx += 1
     args = []
     for _ in range(n_args):
         idx, arg = parse_token_tree(tokens, idx)
         args.append(arg)
-    return idx, partial(f, *args)
+    closure = partial(f, *args)
+    closure.token = token
+    closure.idx = idx_orig
+    return idx, closure
 
 
 def parse_token(token: str) -> tuple[int, Callable]:
@@ -99,7 +104,7 @@ def parse_token(token: str) -> tuple[int, Callable]:
             return 3, lambda condition, yes, no, **kwargs: yes(**kwargs) if condition(**kwargs) else no(**kwargs)
     elif indicator == 'v':
         v_idx = decode_int(body)
-        return 0, lambda *, vs, idx=v_idx, **kwargs: vs[idx](**kwargs)
+        return 0, lambda *, vs, idx=v_idx, **kwargs: vs[idx](vs=vs, **kwargs)
     elif indicator == 'L':
         v_idx = decode_int(body)
 

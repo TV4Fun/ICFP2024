@@ -1,8 +1,7 @@
-import math
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, NamedTuple, Set
+from collections import defaultdict
 import heapq
 
-# Define the keypad controls and their effects on velocity
 CONTROLS = {
     7: (-1, 1),
     8: (0, 1),
@@ -16,122 +15,104 @@ CONTROLS = {
 }
 
 
-def manhattan_distance(p1: Tuple[int, int], p2: Tuple[int, int]) -> int:
-    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+class State(NamedTuple):
+    x: int
+    y: int
+    vx: int
+    vy: int
 
 
-def reconstruct_path(came_from: Dict, current: Tuple) -> List[int]:
-    path = []
-    while current in came_from:
-        current, action = came_from[current]
-        path.append(action)
-    return path[::-1]
-
-
-def prim_mst(coordinates: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    num_points = len(coordinates)
-    if num_points == 0:
-        return []
-
-    mst_edges = []
-    in_mst = [False] * num_points
-    edge_heap = []
-
-    def add_edges(point_index: int):
-        in_mst[point_index] = True
-        for i in range(num_points):
-            if not in_mst[i]:
-                distance = manhattan_distance(coordinates[point_index], coordinates[i])
-                heapq.heappush(edge_heap, (distance, point_index, i))
-
-    add_edges(0)
-
-    while edge_heap and len(mst_edges) < num_points - 1:
-        distance, u, v = heapq.heappop(edge_heap)
-        if not in_mst[v]:
-            mst_edges.append((u, v))
-            add_edges(v)
-
-    return mst_edges
-
-
-def get_mst_order(
-    coordinates: List[Tuple[int, int]], mst_edges: List[Tuple[int, int]]
-) -> List[Tuple[int, int]]:
-    from collections import defaultdict
-
-    neighbors = defaultdict(list)
-    for u, v in mst_edges:
-        neighbors[u].append(v)
-        neighbors[v].append(u)
-
-    visited = set()
-    order = []
-
-    def dfs(node):
-        order.append(node)
-        visited.add(node)
-        for neighbor in neighbors[node]:
-            if neighbor not in visited:
-                dfs(neighbor)
-
-    dfs(0)
-    return [coordinates[i] for i in order]
-
-
-def navigate(coordinates: List[Tuple[int, int]]) -> str:
-    # Include the starting point (0, 0)
-    coordinates = [(0, 0)] + coordinates
-    mst_edges = prim_mst(coordinates)
-    ordered_coordinates = get_mst_order(coordinates, mst_edges)
-
-    full_path = []
-    start = (0, 0, 0, 0)  # (x, y, vx, vy)
-
-    for target in ordered_coordinates[1:]:  # Skip the starting point itself
-        open_set = []
-        heapq.heappush(open_set, (0, start))
-        came_from = {}
-        g_score = {start: 0}
-        f_score = {start: manhattan_distance(start[:2], target)}
-
-        while open_set:
-            current = heapq.heappop(open_set)[1]
-
-            if current[:2] == target:
-                path = reconstruct_path(came_from, current)
-                full_path.extend(path)
-                start = current
-                break
-
-            for action, (dvx, dvy) in CONTROLS.items():
-                x, y, vx, vy = current
-                new_vx, new_vy = vx + dvx, vy + dvy
-                new_x, new_y = x + new_vx, y + new_vy
-                neighbor = (new_x, new_y, new_vx, new_vy)
-
-                tentative_g_score = g_score[current] + 1
-
-                if tentative_g_score < g_score.get(neighbor, float("inf")):
-                    came_from[neighbor] = (current, action)
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + manhattan_distance(
-                        (new_x, new_y), target
-                    )
-                    if neighbor not in [item[1] for item in open_set]:
-                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
-
-    return "".join(map(str, full_path))
-
-
-def parse_input(input_str: str) -> List[Tuple[int, int]]:
-    coordinates = []
+def parse_input(input_str: str) -> Set[Tuple[int, int]]:
+    coordinates = set()
     for line in input_str.strip().split("\n"):
-        x, y = map(int, line.split())
-        coordinates.append((x, y))
+        try:
+            x, y = map(int, line.split())
+            coordinates.add((x, y))
+        except ValueError as e:
+            print(f"Error parsing line: {line}")
+            print(f"Error message: {str(e)}")
+            continue
+
+    if not coordinates:
+        raise ValueError("No valid coordinates found in the input")
+
     return coordinates
 
 
+def manhattan_distance(x1: int, y1: int, x2: int, y2: int) -> int:
+    return abs(x1 - x2) + abs(y1 - y2)
+
+
+def heuristic(
+    state: State,
+    targets: Set[Tuple[int, int]],
+    target_grid: Dict[Tuple[int, int], Set[Tuple[int, int]]],
+) -> int:
+    if not targets:
+        return 0
+
+    grid_key = (state.x // 100, state.y // 100)
+    nearby_targets = target_grid.get(grid_key, set())
+    if not nearby_targets:
+        nearby_targets = targets
+
+    return min(manhattan_distance(state.x, state.y, x, y) for x, y in nearby_targets)
+
+
+def create_target_grid(
+    targets: Set[Tuple[int, int]], grid_size: int = 100
+) -> Dict[Tuple[int, int], Set[Tuple[int, int]]]:
+    grid = defaultdict(set)
+    for x, y in targets:
+        grid_key = (x // grid_size, y // grid_size)
+        grid[grid_key].add((x, y))
+    return grid
+
+
+def solve_maze(coordinates: Set[Tuple[int, int]]) -> str:
+    start = State(0, 0, 0, 0)
+    targets = coordinates.copy()
+    target_grid = create_target_grid(targets)
+
+    pq = [(0, 0, start, "")]
+    visited = set()
+    g_scores = defaultdict(lambda: float("inf"))
+    g_scores[start] = 0
+
+    while pq:
+        _, cost, state, path = heapq.heappop(pq)
+
+        if (state.x, state.y) in targets:
+            targets.remove((state.x, state.y))
+            grid_key = (state.x // 100, state.y // 100)
+            target_grid[grid_key].remove((state.x, state.y))
+            if not target_grid[grid_key]:
+                del target_grid[grid_key]
+            if not targets:
+                return path
+
+        if state in visited:
+            continue
+        visited.add(state)
+
+        for action, (dvx, dvy) in CONTROLS.items():
+            new_vx, new_vy = state.vx + dvx, state.vy + dvy
+            new_x, new_y = state.x + new_vx, state.y + new_vy
+            new_state = State(new_x, new_y, new_vx, new_vy)
+
+            new_cost = cost + 1
+            if new_cost < g_scores[new_state]:
+                g_scores[new_state] = new_cost
+                f_score = new_cost + heuristic(new_state, targets, target_grid)
+                heapq.heappush(pq, (f_score, new_cost, new_state, path + str(action)))
+
+    return "No solution found"
+
+
 def get_optimal_path(input_str: str) -> str:
-    coordinates = parse_input(input_str)
-    return navigate(coordinates)
+    try:
+        coordinates = parse_input(input_str)
+        return solve_maze(coordinates)
+    except Exception as e:
+        print(f"Error in get_optimal_path: {str(e)}")
+        return "Error: Unable to find optimal path"
