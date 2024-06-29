@@ -39,8 +39,10 @@ def main():
             # Get coordinates for the current spaceship
             coordinates_str = get_spaceship_coordinates(ship_number)
 
+            coordinates = snl.parse_input(coordinates_str)
+
             # Find the optimal path
-            optimal_path = snl.get_optimal_path(coordinates_str)
+            optimal_path = snl.navigate(coordinates)
 
             # Send the solution to the terminal
             solve_spaceship(ship_number, optimal_path)
