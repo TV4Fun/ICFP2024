@@ -1,6 +1,5 @@
-import numpy as np
 import networkx as nx
-from itertools import product
+import numpy as np
 
 map_file = "lambdaman5.txt"
 
@@ -19,20 +18,20 @@ lambda_map = np.array([[c == "#" for c in line] for line in lines], dtype=np.boo
 
 nodes = [(int(x), int(y)) for x, y in zip(*np.nonzero(np.logical_not(lambda_map)))]
 
+
 def find_neighbors(node):
     neighbors = []
-    possibilities = [[node[0] + 1, node[1]], [node[0], node[1] + 1], [node[0] - 1, node[1]], [node[0], node[1] - 1]]
-    for option in possibilities:
-        if any(coord < 0 for coord in option):
-            continue
-        if option[0] > lambda_map.shape[0] - 1 or option[1] > lambda_map.shape[1] - 1:
-            continue
-        neighbor = lambda_map[option[0]][option[1]]
-        if not neighbor:
-            neighbors.append(tuple(option))
+    x, y = node
+    possibilities = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
+    for row, col in possibilities:
+        if 0 <= row < lambda_map.shape[0] and 0 <= col < lambda_map.shape[1]:
+            neighbor = lambda_map[row, col]
+            if not neighbor:
+                neighbors.append((row, col))
     return neighbors
 
-G = {lambda_man:find_neighbors(lambda_man)}
+
+G = {lambda_man: find_neighbors(lambda_man)}
 
 for node in nodes:
     neighbors = find_neighbors(node)
@@ -49,6 +48,8 @@ I = nx.complete_graph(H)
 path = nx.approximation.traveling_salesman_problem(G, cycle=False)
 
 print(path)
+
+
 def stringify(path):
     nodes = path
 
@@ -67,5 +68,3 @@ def stringify(path):
         origin = next
 
     return string
-
-
