@@ -4,7 +4,7 @@ from .common import ICFP_CHARSET
 ENCODER = {char: code for code, char in enumerate(ICFP_CHARSET)}
 
 
-def encode_and_compile(msg: str) -> str:
+def encode_message(msg: str) -> str:
     tokens = []
     chars = []
     raw = False
@@ -24,7 +24,7 @@ def encode_and_compile(msg: str) -> str:
                     last_token = tokens.pop()
                     tokens.append("B.")
                     tokens.append(last_token)
-                tokens.append(''.join(chars))
+                tokens.append(' '.join(''.join(chars).split()))  # FIXME: There's probably a nicer way to do this.
                 chars = []
             raw = False
         else:

@@ -43,76 +43,59 @@ def manhattan_distance(x1: int, y1: int, x2: int, y2: int) -> int:
     return abs(x1 - x2) + abs(y1 - y2)
 
 
-def heuristic(
-    state: State,
-    targets: Set[Tuple[int, int]],
-    target_grid: Dict[Tuple[int, int], Set[Tuple[int, int]]],
-) -> int:
-    if not targets:
-        return 0
+def navigate(coordinates: Set[Tuple[int, int]]) -> str:
+    state = State(0, 0, 0, 0)
+    nav_plan = []
 
-    grid_key = (state.x // 100, state.y // 100)
-    nearby_targets = target_grid.get(grid_key, set())
-    if not nearby_targets:
-        nearby_targets = targets
+    while coordinates:
+        min_distance = float("inf")
+        best_command = None
+        best_coord = None
 
-    return min(manhattan_distance(state.x, state.y, x, y) for x, y in nearby_targets)
+        for command, (dvx, dvy) in CONTROLS.items():
+            new_state = State(
+                state.x + state.vx + dvx,
+                state.y + state.vy + dvy,
+                state.vx + dvx,
+                state.vy + dvy,
+            )
 
+            for coord in coordinates:
+                distance = manhattan_distance(
+                    new_state.x, new_state.y, coord[0], coord[1]
+                )
+                if distance < min_distance:
+                    min_distance = distance
+                    best_command = command
+                    best_coord = coord
 
-def create_target_grid(
-    targets: Set[Tuple[int, int]], grid_size: int = 100
-) -> Dict[Tuple[int, int], Set[Tuple[int, int]]]:
-    grid = defaultdict(set)
-    for x, y in targets:
-        grid_key = (x // grid_size, y // grid_size)
-        grid[grid_key].add((x, y))
-    return grid
+        if best_command is None:
+            break
 
+        nav_plan.append(str(best_command))
+        state = State(
+            state.x + state.vx + CONTROLS[best_command][0],
+            state.y + state.vy + CONTROLS[best_command][1],
+            state.vx + CONTROLS[best_command][0],
+            state.vy + CONTROLS[best_command][1],
+        )
+        coordinates.remove(best_coord)
 
-def solve_maze(coordinates: Set[Tuple[int, int]]) -> str:
-    start = State(0, 0, 0, 0)
-    targets = coordinates.copy()
-    target_grid = create_target_grid(targets)
-
-    pq = [(0, 0, start, "")]
-    visited = set()
-    g_scores = defaultdict(lambda: float("inf"))
-    g_scores[start] = 0
-
-    while pq:
-        _, cost, state, path = heapq.heappop(pq)
-
-        if (state.x, state.y) in targets:
-            targets.remove((state.x, state.y))
-            grid_key = (state.x // 100, state.y // 100)
-            target_grid[grid_key].remove((state.x, state.y))
-            if not target_grid[grid_key]:
-                del target_grid[grid_key]
-            if not targets:
-                return path
-
-        if state in visited:
-            continue
-        visited.add(state)
-
-        for action, (dvx, dvy) in CONTROLS.items():
-            new_vx, new_vy = state.vx + dvx, state.vy + dvy
-            new_x, new_y = state.x + new_vx, state.y + new_vy
-            new_state = State(new_x, new_y, new_vx, new_vy)
-
-            new_cost = cost + 1
-            if new_cost < g_scores[new_state]:
-                g_scores[new_state] = new_cost
-                f_score = new_cost + heuristic(new_state, targets, target_grid)
-                heapq.heappush(pq, (f_score, new_cost, new_state, path + str(action)))
-
-    return "No solution found"
+    return "".join(nav_plan)
 
 
-def get_optimal_path(input_str: str) -> str:
-    try:
-        coordinates = parse_input(input_str)
-        return solve_maze(coordinates)
-    except Exception as e:
-        print(f"Error in get_optimal_path: {str(e)}")
-        return "Error: Unable to find optimal path"
+# Example usage
+input_str = """
+1 1
+1 0
+1 -1
+0 -1
+0 1
+-1 1
+-1 0
+-1 -1
+"""
+
+coordinates = parse_input(input_str)
+nav_plan = navigate(coordinates)
+print("Navigation plan:", nav_plan)

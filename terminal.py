@@ -1,7 +1,7 @@
 import requests
 from traceback import print_exc
 
-from icfp.encode import encode_and_compile
+from icfp.encode import encode_message
 from icfp.decode import decode_message
 
 
@@ -17,7 +17,7 @@ while True:
         print_raw = True
         command = command[1:]
 
-    payload = encode_and_compile(command)
+    payload = encode_message(command)
     response = requests.post(URL, data=payload, headers=AUTH_HEADER)
     if print_raw:
         print(response.text)
