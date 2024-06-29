@@ -24,7 +24,7 @@ def encode_message(msg: str) -> str:
                     last_token = tokens.pop()
                     tokens.append("B.")
                     tokens.append(last_token)
-                tokens.append(''.join(chars))
+                tokens.append(' '.join(''.join(chars).split()))  # FIXME: There's probably a nicer way to do this.
                 chars = []
             raw = False
         else:
