@@ -1,10 +1,10 @@
-from .decode import ICFP_CHARSET
+from .common import ICFP_CHARSET
 
 
 ENCODER = {char: code for code, char in enumerate(ICFP_CHARSET)}
 
 
-def encode_string(msg: str) -> str:
+def encode_and_compile(msg: str) -> str:
     tokens = []
     chars = []
     raw = False
@@ -42,6 +42,10 @@ def encode_string(msg: str) -> str:
     return ' '.join(tokens)
 
 
+def encode_string(msg: str) -> str:
+    return ''.join(encode_char(char) for char in msg)
+
+
 def encode_int(value: int) -> str:
     digits_reversed: list[str] = []
 
@@ -49,7 +53,7 @@ def encode_int(value: int) -> str:
         digits_reversed.append(encode_digit(value % 94))
         value //= 94
 
-    return 'I' + ''.join(reversed(digits_reversed))
+    return ''.join(reversed(digits_reversed))
 
 
 def encode_digit(digit: int) -> str:
