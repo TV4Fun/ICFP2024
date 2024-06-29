@@ -19,7 +19,7 @@ class DecoderTests(unittest.TestCase):
 
     def test_indirect_call(self):
         self.assertEqual("42", decode.decode_message("B$ B$ L# L$ v$ S- IK"))
-        self.assertEqual("42", decode.decode_message("B$ B$ L# L$ v# S- IK"))
+        self.assertEqual("Hello", decode.decode_message("B$ B$ L# L$ v# SB%,,/ IK"))
 
     def test_nested_call(self):
         self.assertEqual("12", decode.decode_message("I-"))

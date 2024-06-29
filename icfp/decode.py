@@ -84,7 +84,7 @@ def parse_token(token: str) -> tuple[int, Callable]:
         elif body == 'D':
             return 2, lambda x, y, **kwargs: y(**kwargs)[x(**kwargs):]
         elif body == '$':
-            return 2, lambda f, x, *, vs={}, **kwargs: f(**kwargs)(x, vs=vs, **kwargs)
+            return 2, lambda f, x, **kwargs: f(**kwargs)(x, **kwargs)
         else:
             print_error(f"Unrecognized binary operator: {body}")
     elif indicator == '?':
