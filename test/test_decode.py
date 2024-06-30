@@ -67,6 +67,11 @@ class DecoderTests(unittest.TestCase):
             self.assertEqual("Self-check OK, send `solve language_test 4w3s0m3` to claim points for it",
                              decode.decode_message(f.read()))
 
+    def test_efficiency1(self) -> None:
+        with open("../test_inputs/efficiency1.txt") as f:
+            self.assertEqual("17592186044416",
+                             decode.decode_message(f.read()))
+
 
 if __name__ == '__main__':
     unittest.main()
