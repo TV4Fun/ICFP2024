@@ -62,6 +62,12 @@ class DecoderTests(unittest.TestCase):
         self.assertEqual("2", decode.decode_message('B$ L! B$ v! I" L! B+ v! v!'))
         self.assertEqual("4", decode.decode_message('B$ L! B$ v! B$ v! I" L! B+ v! v!'))
 
+    def test_read_int(self) -> None:
+        self.assertEqual("e", decode.decode_message('U$ B+ I# I#'))
+        self.assertEqual("4", decode.decode_message('U$ B+ I# I#', read_int=True))
+        self.assertEqual("2", decode.decode_message(r"""S#~~S/5}3#/2%$}3/-%}0/).43}&/2}53).'}4(%}%#(/}3%26)#%_~""",
+                                                    read_int=True))
+
     def test_language_test(self) -> None:
         with open("../test_inputs/language_test.txt") as f:
             self.assertEqual("Self-check OK, send `solve language_test 4w3s0m3` to claim points for it",
