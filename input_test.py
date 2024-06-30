@@ -1,5 +1,7 @@
 from icfp.decode import decode_message
-from sys import argv
+from sys import argv, setrecursionlimit
 
-with open("test_inputs/" + argv[1]) as file:
+setrecursionlimit(10000)
+
+with open(argv[1]) as file:
     print(decode_message(file.read()))

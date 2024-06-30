@@ -1,9 +1,11 @@
 import requests
+from sys import setrecursionlimit
 from traceback import print_exc
 
 from icfp.encode import encode_message
 from icfp.decode import decode_message
 
+setrecursionlimit(10000)
 
 URL = "https://boundvariable.space/communicate"
 AUTH_HEADER = {"Authorization": "Bearer f8fb3b34-7f8f-4cb0-bd74-c83be464d0a1"}
