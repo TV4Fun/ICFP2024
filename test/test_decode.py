@@ -58,6 +58,10 @@ class DecoderTests(unittest.TestCase):
         self.assertEqual("15818151", decode.decode_message("U# S4%34"))
         self.assertEqual("15818151", decode.decode_message("U# B. S4% S34"))
 
+    def test_recursion(self):
+        self.assertEqual("2", decode.decode_message('B$ L! B$ v! I" L! B+ v! v!'))
+        self.assertEqual("4", decode.decode_message('B$ L! B$ v! B$ v! I" L! B+ v! v!'))
+
 
 if __name__ == '__main__':
     unittest.main()
