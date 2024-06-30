@@ -1,4 +1,4 @@
-# import networkx as nx
+import networkx as nx
 import numpy as np
 
 """
@@ -7,9 +7,6 @@ import numpy as np
 'L': {2, 3, 6, 7, 10, 11, 14, 15}
 'R': {1, 3, 5, 7, 9, 11, 13, 15}
 """
-
-
-
 
 WAYS = {
     1: "R",
@@ -67,7 +64,8 @@ class LambdaMap:
                         distances[coords] = new_path
                         self.max_distance = len(new_path)
                         visited.append(coords)
-        abs_distances = dict(zip(list(distances.keys()), len(distances[key] for key in list(distances.keys()))))
+
+        abs_distances = dict(zip(list(distances.keys()), [len(distances[key]) for key in list(distances.keys())]))
         return distances, abs_distances
 
     def lazy_path(self):
