@@ -1,5 +1,5 @@
-from typing import List, Tuple, Set, NamedTuple
-from collections import defaultdict
+from typing import List, Tuple, NamedTuple
+from collections import Counter
 
 CONTROLS = {
     7: (-1, 1),
@@ -21,12 +21,12 @@ class State(NamedTuple):
     vy: int
 
 
-def parse_input(input_str: str) -> Set[Tuple[int, int]]:
-    coordinates = set()
+def parse_input(input_str: str) -> Counter:
+    coordinates = Counter()
     for line in input_str.strip().split("\n"):
         try:
             x, y = map(int, line.split())
-            coordinates.add((x, y))
+            coordinates[(x, y)] += 1
         except ValueError as e:
             print(f"Error parsing line: {line}")
             print(f"Error message: {str(e)}")
@@ -42,51 +42,71 @@ def manhattan_distance(x1: int, y1: int, x2: int, y2: int) -> int:
     return abs(x1 - x2) + abs(y1 - y2)
 
 
-def find_best_move(
-    state: State, coordinates: Set[Tuple[int, int]]
-) -> Tuple[int, Tuple[int, int]]:
+def find_best_move(state: State, coordinates: Counter) -> Tuple[int, Tuple[int, int]]:
     best_command = None
     best_coord = None
     min_distance = float("inf")
     min_velocity_sum = float("inf")
 
-    for coord in coordinates:
-        for command, (dvx, dvy) in CONTROLS.items():
-            new_x = state.x + state.vx + dvx
-            new_y = state.y + state.vy + dvy
-            new_vx = state.vx + dvx
-            new_vy = state.vy + dvy
-            distance = manhattan_distance(new_x, new_y, coord[0], coord[1])
-            velocity_sum = abs(new_vx) + abs(new_vy)
+    for coord, count in coordinates.items():
+        if count > 0:
+            for command, (dvx, dvy) in CONTROLS.items():
+                new_x = state.x + state.vx + dvx
+                new_y = state.y + state.vy + dvy
+                new_vx = state.vx + dvx
+                new_vy = state.vy + dvy
+                distance = manhattan_distance(new_x, new_y, coord[0], coord[1])
+                velocity_sum = abs(new_vx) + abs(new_vy)
 
-            if distance < min_distance or (
-                distance == min_distance and velocity_sum < min_velocity_sum
-            ):
-                min_distance = distance
-                min_velocity_sum = velocity_sum
-                best_command = command
-                best_coord = coord
+                if distance < min_distance or (
+                    distance == min_distance and velocity_sum < min_velocity_sum
+                ):
+                    min_distance = distance
+                    min_velocity_sum = velocity_sum
+                    best_command = command
+                    best_coord = coord
 
     return best_command, best_coord
 
 
-def navigate(coordinates: Set[Tuple[int, int]]) -> str:
+def navigate(coordinates: Counter) -> str:
     state = State(0, 0, 0, 0)
     nav_plan = []
-    remaining_coords = coordinates.copy()
 
-    while remaining_coords:
-        best_command, best_coord = find_best_move(state, remaining_coords)
+    while coordinates:
+        best_command, best_coord = find_best_move(state, coordinates)
+
+        if best_command is None:
+            # No direct keystroke to any remaining coordinate, try to get closer
+            best_distance = float("inf")
+            for command, (dvx, dvy) in CONTROLS.items():
+                new_x = state.x + state.vx + dvx
+                new_y = state.y + state.vy + dvy
+                distance = min(
+                    manhattan_distance(new_x, new_y, coord[0], coord[1])
+                    for coord in coordinates
+                )
+                if distance < best_distance:
+                    best_distance = distance
+                    best_command = command
 
         if best_command is None:
             break
 
         nav_plan.append(str(best_command))
-        remaining_coords.remove(best_coord)
+
+        new_x = state.x + state.vx + CONTROLS[best_command][0]
+        new_y = state.y + state.vy + CONTROLS[best_command][1]
+
+        # Check if we've hit a coordinate
+        if (new_x, new_y) in coordinates:
+            coordinates[(new_x, new_y)] -= 1
+            if coordinates[(new_x, new_y)] == 0:
+                del coordinates[(new_x, new_y)]
 
         state = State(
-            state.x + state.vx + CONTROLS[best_command][0],
-            state.y + state.vy + CONTROLS[best_command][1],
+            new_x,
+            new_y,
             state.vx + CONTROLS[best_command][0],
             state.vy + CONTROLS[best_command][1],
         )
