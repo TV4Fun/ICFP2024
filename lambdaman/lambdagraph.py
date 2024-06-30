@@ -35,13 +35,14 @@ DIRECTIONS = {
 
 
 class LambdaMap:
-    def __init__(self, map_file):
+    def __init__(self, map_file: str):
         self.map, self.origin = create_array(map_file)
         self.pills = [(int(x), int(y)) for x, y in zip(*np.nonzero(self.map)) if (int(x), int(y))]
         self.max_distance = 1
         self.origin_paths, self.origin_distances = self.walk()
+        self.graph = self.create_graph()
 
-    def walk(self):
+    def walk(self) -> tuple[dict[tuple[int, int], str], dict[tuple[int, int], int]]:
         distances = dict(zip(self.pills, ["K" for _ in self.pills]))
         ways = WAYS[self.map[self.origin]]
         distances[self.origin] = ""
@@ -68,7 +69,7 @@ class LambdaMap:
         abs_distances = dict(zip(list(distances.keys()), [len(distances[key]) for key in list(distances.keys())]))
         return distances, abs_distances
 
-    def lazy_path(self):
+    def lazy_path(self) -> str:
         paths = sorted(list(self.origin_paths.values()), key=lambda x: len(x), reverse=True)
         combined_paths = []
 
@@ -86,6 +87,24 @@ class LambdaMap:
             full_path = combined_paths[0]
 
         return full_path
+
+    def create_graph(self) -> nx.MultiGraph:
+        G = nx.MultiGraph()
+        G.add_nodes_from(self.pills)
+        for node in G:
+            edges = WAYS[self.map[node]]
+            coords = [(DIRECTIONS[way][0] + node[0], DIRECTIONS[way][1] + node[1]) for way in edges]
+            for coord in coords:
+                G.add_edge(node, coord)
+        return G
+
+    def lazy_tsp(self) -> str:
+        lazy_tsp = nx.approximation.traveling_salesman_problem(self.graph, cycle=False)
+        origin = lazy_tsp.index(self.origin)
+        first_path = lazy_tsp[:origin]
+        back_path = [self.origin] + first_path[::-1] + first_path[1:] + lazy_tsp[origin:]
+
+        return stringify(back_path)
 
 
 def create_array(map_file: str) -> tuple[np.array, tuple[int, int]]:
@@ -125,3 +144,23 @@ def create_array(map_file: str) -> tuple[np.array, tuple[int, int]]:
                 map_array[row, col] = 0b0000
 
     return map_array, lambda_man
+
+
+def stringify(path: list[tuple[int, int]]) -> str:
+    nodes = path
+
+    origin = nodes.pop(0)
+    stringified = ""
+    while nodes:
+        next = nodes.pop(0)
+        if origin[0] - next[0] == 1:
+            stringified += "U"
+        elif origin[0] - next[0] == -1:
+            stringified += "D"
+        elif origin[1] - next[1] == 1:
+            stringified += "L"
+        elif origin[1] - next[1] == -1:
+            stringified += "R"
+        origin = next
+
+    return stringified
