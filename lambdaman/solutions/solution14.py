@@ -4,4 +4,4 @@ map_file = "..//problems/lambdaman14.txt"
 
 G = LambdaMap(map_file)
 
-print(f"solve lambdaman14 {G.lazy_path}")
+lazy_path = G.lazy_path()
