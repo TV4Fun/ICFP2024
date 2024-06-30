@@ -57,4 +57,11 @@ L.................................................
 
 G = LambdaMap(map_file)
 
-lazy_path = G.lazy_path()
+lazy_tsp = G.lazy_tsp()
+
+# also not what was used to solve this
+# although it looks similar to my solution
+print(f"solve lambdaman9 {lazy_tsp}")
+
+# more efficient solution
+# B$ L! B$ v! B$ v! B$ v! B$ v! B$ v! SLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF> L! B. v! v!
