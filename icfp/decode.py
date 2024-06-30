@@ -86,7 +86,12 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
         elif body == '*':
             return 2, vs, lambda x, y, *, vals: x(vals=vals) * y(vals=vals)
         elif body == '/':
-            return 2, vs, lambda x, y, *, vals: int(x(vals=vals) / y(vals=vals))
+            def truncated_divide(x: Callable, y: Callable, *, vals: dict[int, Callable]) -> int:
+                quotient, remainder = divmod(x(vals=vals), y(vals=vals))
+                if remainder and quotient < 0:
+                    quotient += 1
+                return quotient
+            return 2, vs, truncated_divide
         elif body == '%':
             def stupid_mod(x: Callable[[], int], y: Callable[[], int], *, vals) -> int:
                 x_val = x(vals=vals)
@@ -124,7 +129,7 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
             return 3, vs, lambda condition, yes, no, *, vals: yes(vals=vals) if condition(vals=vals) else no(vals=vals)
     elif indicator == 'v':
         v_idx = decode_int(body)
-        return 0, vs, lambda *, vals, idx=v_idx: vals[idx][0]()
+        return 0, vs, lambda *, vals, idx=v_idx: vals[idx]()
 
     elif indicator == 'L':
         idx = decode_int(body)
@@ -137,7 +142,7 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
 
             def apply(arg_value: object, *, idx=idx) -> Callable:
                 vals = vals_captured.copy()
-                vals[idx] = arg_value, vals_captured
+                vals[idx] = arg_value
                 result = f(vals=vals)
                 return result
             return apply
