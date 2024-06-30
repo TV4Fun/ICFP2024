@@ -27,7 +27,7 @@ def decode_message(msg: str) -> str:
     idx, root = parse_token_tree(tokens, 0, {})
     if idx < len(tokens):
         print_error(f"Unexpected extra tokens: {tokens[idx:]}")
-    return str(root())
+    return str(root(vals={}))
 
 
 def tokenize(msg: str) -> list[str]:
@@ -60,41 +60,37 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
         if body:
             raise SyntaxError(f"Boolean token must have empty body. Found {body}")
         if indicator == 'T':
-            return 0, vs, lambda: True
+            return 0, vs, lambda *, vals: True
         else:
-            return 0, vs, lambda: False
+            return 0, vs, lambda *, vals: False
     elif indicator == 'I':
-        return 0, vs, lambda *, s=body: decode_int(s)
+        return 0, vs, lambda *, vals, s=body: decode_int(s)
     elif indicator == 'S':
-        return 0, vs, lambda *, s=body: decode_string(s)
+        return 0, vs, lambda *, vals, s=body: decode_string(s)
     elif indicator == 'U':
         if body == '-':
-            return 1, vs, lambda i: -i()
+            return 1, vs, lambda i, *, vals: -i(vals=vals)
         elif body == '!':
-            return 1, vs, lambda x: not x()
+            return 1, vs, lambda x, *, vals: not x(vals=vals)
         elif body == '#':
-            return 1, vs, lambda s: decode_int(encode_string(s()))
+            return 1, vs, lambda s, *, vals: decode_int(encode_string(s(vals=vals)))
         elif body == '$':
-            return 1, vs, lambda n: decode_string(encode_int(n()))
+            return 1, vs, lambda n, *, vals: decode_string(encode_int(n(vals=vals)))
         else:
             print_error(f"Unrecognized unary operator: {body}")
     elif indicator == 'B':
         if body == '+':
-            def plus(x, y):
-                x_val = x()
-                y_val = y()
-                return x_val + y_val
-            return 2, vs, plus #lambda x, y: x() + y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) + y(vals=vals)
         elif body == '-':
-            return 2, vs, lambda x, y: x() - y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) - y(vals=vals)
         elif body == '*':
-            return 2, vs, lambda x, y,: x() * y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) * y(vals=vals)
         elif body == '/':
-            return 2, vs, lambda x, y: int(x() / y())
+            return 2, vs, lambda x, y, *, vals: int(x(vals=vals) / y(vals=vals))
         elif body == '%':
-            def stupid_mod(x: Callable[[], int], y: Callable[[], int]) -> int:
-                x_val = x()
-                y_val = y()
+            def stupid_mod(x: Callable[[], int], y: Callable[[], int], *, vals) -> int:
+                x_val = x(vals=vals)
+                y_val = y(vals=vals)
                 result = x_val % y_val
                 if x_val < 0:
                     result -= y_val
@@ -102,48 +98,47 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
                 return result
             return 2, vs, stupid_mod
         elif body == '<':
-            return 2, vs, lambda x, y: x() < y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) < y(vals=vals)
         elif body == '>':
-            return 2, vs, lambda x, y: x() > y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) > y(vals=vals)
         elif body == '=':
-            return 2, vs, lambda x, y: x() == y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) == y(vals=vals)
         elif body == '|':
-            return 2, vs, lambda x, y: x() or y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) or y(vals=vals)
         elif body == '&':
-            return 2, vs, lambda x, y: x() and y()
+            return 2, vs, lambda x, y, *, vals: x(vals=vals) and y(vals=vals)
         elif body == '.':
-            return 2, vs, lambda x, y: ''.join((x(), y()))
+            return 2, vs, lambda x, y, *, vals: ''.join((x(vals=vals), y(vals=vals)))
         elif body == 'T':
-            return 2, vs, lambda x, y: y()[:x()]
+            return 2, vs, lambda x, y, *, vals: y(vals=vals)[:x(vals=vals)]
         elif body == 'D':
-            return 2, vs, lambda x, y: y()[x():]
+            return 2, vs, lambda x, y, *, vals: y(vals=vals)[x(vals=vals):]
         elif body == '$':
-            return 2, vs, lambda f, x: f()(x)
+            return 2, vs, lambda f, x, *, vals: f(vals=vals)(partial(x, vals=vals))
         else:
             print_error(f"Unrecognized binary operator: {body}")
     elif indicator == '?':
         if body:
             print_error(f"? must have empty body. Found {body}")
         else:
-            return 3, vs, lambda condition, yes, no: yes() if condition() else no()
+            return 3, vs, lambda condition, yes, no, *, vals: yes(vals=vals) if condition(vals=vals) else no(vals=vals)
     elif indicator == 'v':
-        idx = decode_int(body)
-        if idx in vs:
-            return 0, vs, vs[idx]
-        else:
-            return 0, vs, OutOfScope(token)
+        v_idx = decode_int(body)
+        return 0, vs, lambda *, vals, idx=v_idx: vals[idx][0]()
+
     elif indicator == 'L':
         idx = decode_int(body)
         vs = vs.copy()
         arg = Const("v" + body)
         vs[idx] = arg
 
-        def lambda_abstraction(f: Callable, *, arg=arg) -> Callable:
-            def apply(arg_value: object) -> Callable:
-                #arg_old_value = arg.value
-                arg.value = arg_value
-                result = f()
-                #arg.value = arg_old_value
+        def lambda_abstraction(f: Callable, *, vals) -> Callable:
+            vals_captured = vals.copy()
+
+            def apply(arg_value: object, *, idx=idx) -> Callable:
+                vals = vals_captured.copy()
+                vals[idx] = arg_value, vals_captured
+                result = f(vals=vals)
                 return result
             return apply
 
