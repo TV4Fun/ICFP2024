@@ -60,14 +60,14 @@ def parse_token_tree(tokens: list[str], idx: int, vs: dict) -> tuple[int, Functi
         closure = partial(f, *args)
     else:
         closure = f
+    closure = cache(closure)
     closure.token = token
     closure.idx = idx_orig
-    return idx, cache(closure)
+    return idx, closure
 
 
 def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
-    indicator = token[0]
-    body = token[1:]
+    indicator, body = split_token(token)
 
     if indicator == 'T' or indicator == 'F':
         if body:
@@ -160,7 +160,24 @@ def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
 
         return 1, vs, lambda_abstraction
     else:
-        print_error(f"Unsupported token type: {token}")
+        raise SyntaxError(f"Unrecognized indicator: {indicator}")
+
+
+def split_token(token: str) -> tuple[str, str]:
+    return token[0], token[1:]
+
+
+def n_args(indicator: str) -> int:
+    if indicator in {'T', 'F', 'I', 'S', 'v'}:
+        return 0
+    elif indicator in {'U', 'L'}:
+        return 1
+    elif indicator == 'B':
+        return 2
+    elif indicator == '?':
+        return 3
+    else:
+        raise SyntaxError(f"Unrecognized indicator: {indicator}")
 
 
 def decode_int(body: str) -> int:
