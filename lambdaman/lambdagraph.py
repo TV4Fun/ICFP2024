@@ -69,7 +69,7 @@ class LambdaMap:
                         visited.append(coords)
         paths = sorted(list(distances.values()), key=lambda x: len(x), reverse=True)
         combined_paths = []
-        print(paths)
+
 
 
         while paths:
