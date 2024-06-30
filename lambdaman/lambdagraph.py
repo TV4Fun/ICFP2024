@@ -1,5 +1,9 @@
+from icfp.encode import encode_digit, encode_char
+from icfp.decode import decode_int
 import networkx as nx
 import numpy as np
+from math import log
+
 
 map_file = "lambdaman5.txt"
 
@@ -41,13 +45,11 @@ for node in nodes:
 G = nx.from_dict_of_lists(G)
 
 H = nx.minimum_spanning_tree(G)
-print(len(G.nodes))
-print(lambda_man)
+
 
 I = nx.complete_graph(H)
 path = nx.approximation.traveling_salesman_problem(G, cycle=False)
 
-print(path)
 
 
 def stringify(path):
@@ -68,3 +70,5 @@ def stringify(path):
         origin = next
 
     return string
+
+
