@@ -1,13 +1,25 @@
-from functools import partial
-from typing import Callable, Optional
+from functools import partial, cache
+from typing import Callable, Optional, Protocol, TypeVar
 
 from .common import print_error, ICFP_CHARSET
 from .encode import encode_string, encode_int
+from .frozen_dict import FrozenDict
+
+T = TypeVar('T', int, str, bool, 'Function', covariant=True)
+
+
+class Function(Protocol[T]):
+    def __call__(self, vals: FrozenDict[int, 'Function']) -> T:
+        ...
+
+
+ValDict = FrozenDict[int, Function]
+
 
 class Const:
     def __init__(self, name: str):
         self.name = name
-        self.value: Optional[Callable] = None
+        self.value: Optional[Function] = None
 
     def __call__(self) -> object:
         if self.value is None:
@@ -22,19 +34,20 @@ class OutOfScope:
     def __call__(self):
         raise ValueError(f"Attempt to evaluate out-of-scope variable {self.name}")
 
+
 def decode_message(msg: str) -> str:
     tokens = tokenize(msg)
     idx, root = parse_token_tree(tokens, 0, {})
     if idx < len(tokens):
         print_error(f"Unexpected extra tokens: {tokens[idx:]}")
-    return str(root(vals={}))
+    return str(root(vals=FrozenDict()))
 
 
 def tokenize(msg: str) -> list[str]:
     return msg.split()
 
 
-def parse_token_tree(tokens: list[str], idx: int, vs: dict[int, Callable]) -> tuple[int, Callable]:
+def parse_token_tree(tokens: list[str], idx: int, vs: dict) -> tuple[int, Function]:
     token = tokens[idx]
     idx_orig = idx
     n_args, vs, f = parse_token(token, vs)
@@ -49,10 +62,10 @@ def parse_token_tree(tokens: list[str], idx: int, vs: dict[int, Callable]) -> tu
         closure = f
     closure.token = token
     closure.idx = idx_orig
-    return idx, closure
+    return idx, cache(closure)
 
 
-def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Callable], Callable]:
+def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
     indicator = token[0]
     body = token[1:]
 
@@ -86,14 +99,14 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
         elif body == '*':
             return 2, vs, lambda x, y, *, vals: x(vals=vals) * y(vals=vals)
         elif body == '/':
-            def truncated_divide(x: Callable, y: Callable, *, vals: dict[int, Callable]) -> int:
+            def truncated_divide(x: Function[int], y: Function[int], *, vals: ValDict) -> int:
                 quotient, remainder = divmod(x(vals=vals), y(vals=vals))
                 if remainder and quotient < 0:
                     quotient += 1
                 return quotient
             return 2, vs, truncated_divide
         elif body == '%':
-            def stupid_mod(x: Callable[[], int], y: Callable[[], int], *, vals) -> int:
+            def stupid_mod(x: Function[int], y: Function[int], *, vals: ValDict) -> int:
                 x_val = x(vals=vals)
                 y_val = y(vals=vals)
                 result = x_val % y_val
@@ -137,13 +150,11 @@ def parse_token(token: str, vs: dict[int, Callable]) -> tuple[int, dict[int, Cal
         arg = Const("v" + body)
         vs[idx] = arg
 
-        def lambda_abstraction(f: Callable, *, vals) -> Callable:
-            vals_captured = vals.copy()
+        def lambda_abstraction(f: Function, *, vals: ValDict) -> Callable:
+            vals_captured = vals
 
-            def apply(arg_value: object, *, idx=idx) -> Callable:
-                vals = vals_captured.copy()
-                vals[idx] = arg_value
-                result = f(vals=vals)
+            def apply(arg_value: Function, *, idx=idx) -> Callable:
+                result = f(vals=vals_captured + (idx, arg_value))
                 return result
             return apply
 
