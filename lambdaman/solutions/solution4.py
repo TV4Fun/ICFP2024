@@ -1,4 +1,5 @@
 from lambdaman.lambdagraph import LambdaMap
+import networkx as nx
 
 map_file = "..//problems/lambdaman4.txt"
 
@@ -28,5 +29,5 @@ map_file = "..//problems/lambdaman4.txt"
 
 G = LambdaMap(map_file)
 
-lazy_path = G.lazy_path()
-
+# lazy_path = G.lazy_path()
+# lazy_tsp = G.lazy_tsp()
