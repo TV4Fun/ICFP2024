@@ -7,7 +7,8 @@ improve our results.
 # Code Overview
 
 The dates on our various commits should be reasonably accurate as to when the code was written.
-The last commit in the lightning round was [8787105](https://github.com/TV4Fun/ICFP2024/commit/87871051b3f48742bda4952c5d46813c16b1c5e1).
+The last commit in the lightning round
+was [8787105](https://github.com/TV4Fun/ICFP2024/commit/87871051b3f48742bda4952c5d46813c16b1c5e1).
 We had at that point implemented an ICFP interpreter
 that was good enough to pass the language test, but broke for more complex expressions of lambdas and
 variable capture. We had brute-force solvers for Lambdaman and Spaceship. We were treating Lambdaman as
@@ -64,6 +65,10 @@ rewrite our decoder in another language, so we just solved as many problems as w
 
 @Jazhikho, please add some remarks here.
 
+## 3d
+
+Solutions to 3d were written by hand. I wrote them out on graph paper then carefully typed them in.
+
 ## Test
 
 The [test](test/) folder contains unit tests for the encoders and decoders in the [icfp](icfp/) folders. We employed a
@@ -72,8 +77,10 @@ expression we could that would recreate it, and then wrote a unit test with it. 
 working properly when it passed all the unit tests, or at least we had fixed all the bugs we had identified so far.
 
 # Acknowledgements
+
 Thank you so much to @deilann, and @Jazhikho for all the incredible work they put in over the last few days.
 While we all collaborated and made contributions to one another's work, the bulk of the [icfp](icfp/) module was written
 by @TV4Fun, the bulk of the [lambdaman](lambdaman/) code was written by @deilann, and the bulk of the
-[spaceship](spaceship/) code was written by @Jazhikho. Every member of our team was integral to our success, and I am
-truly gratified at how well we came together to solve these problems. ---@TV4Fun
+[spaceship](spaceship/) code was written by @Jazhikho. Solutions for [3d](3d/solutions) were written by @TV4Fun. Every
+member of our team was integral to our success, and I am truly gratified at how well we came together to solve these
+problems. ---@TV4Fun
