@@ -1,5 +1,5 @@
 from functools import partial, cache
-from typing import Callable, Optional, Protocol, TypeVar
+from typing import Callable, Protocol, TypeVar
 
 from . import disassemble, encode
 from .common import print_error, ICFP_CHARSET
@@ -11,6 +11,7 @@ T = TypeVar('T', int, str, bool, 'Function', covariant=True)
 class Function(Protocol[T]):
     token: str
     idx: int
+
     def __call__(self, vals: FrozenDict[int, 'Function']) -> T:
         ...
 
@@ -23,28 +24,9 @@ class IncompleteFunction(Protocol[T]):
 ValDict = FrozenDict[int, Function]
 
 
-class Const:
-    def __init__(self, name: str):
-        self.name = name
-        self.value: Optional[Function] = None
-
-    def __call__(self) -> object:
-        if self.value is None:
-            raise ValueError(f"Variable {self.name} is not defined")
-        else:
-            return self.value()
-
-class OutOfScope:
-    def __init__(self, name: str):
-        self.name = name
-
-    def __call__(self):
-        raise ValueError(f"Attempt to evaluate out-of-scope variable {self.name}")
-
-
 def decode_message(msg: str, read_int: bool = False) -> str:
     tokens = tokenize(msg)
-    idx, root = parse_token_tree(tokens, 0, {})
+    idx, root = parse_token_tree(tokens, 0)
     if idx < len(tokens):
         print_error(f"Unexpected extra tokens: {tokens[idx:]}")
 
@@ -59,14 +41,14 @@ def tokenize(msg: str) -> list[str]:
     return msg.split()
 
 
-def parse_token_tree(tokens: list[str], idx: int, vs: dict) -> tuple[int, Function]:
+def parse_token_tree(tokens: list[str], idx: int) -> tuple[int, Function]:
     token = tokens[idx]
     idx_orig = idx
-    n_args, vs, f = parse_token(token, vs)
+    n_args, f = parse_token(token)
     idx += 1
     args = []
     for _ in range(n_args):
-        idx, arg = parse_token_tree(tokens, idx, vs)
+        idx, arg = parse_token_tree(tokens, idx)
         args.append(arg)
     if args:
         closure = partial(f, *args)
@@ -78,45 +60,46 @@ def parse_token_tree(tokens: list[str], idx: int, vs: dict) -> tuple[int, Functi
     return idx, closure
 
 
-def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
+def parse_token(token: str) -> tuple[int, Callable]:
     indicator, body = split_token(token)
 
     if indicator == 'T' or indicator == 'F':
         if body:
             raise SyntaxError(f"Boolean token must have empty body. Found {body}")
         if indicator == 'T':
-            return 0, vs, lambda *, vals: True
+            return 0, lambda *, vals: True
         else:
-            return 0, vs, lambda *, vals: False
+            return 0, lambda *, vals: False
     elif indicator == 'I':
-        return 0, vs, lambda *, vals, s=body: decode_int(s)
+        return 0, lambda *, vals, s=body: decode_int(s)
     elif indicator == 'S':
-        return 0, vs, lambda *, vals, s=body: decode_string(s)
+        return 0, lambda *, vals, s=body: decode_string(s)
     elif indicator == 'U':
         if body == '-':
-            return 1, vs, lambda i, *, vals: -i(vals=vals)
+            return 1, lambda i, *, vals: -i(vals=vals)
         elif body == '!':
-            return 1, vs, lambda x, *, vals: not x(vals=vals)
+            return 1, lambda x, *, vals: not x(vals=vals)
         elif body == '#':
-            return 1, vs, lambda s, *, vals: decode_int(encode.encode_string(s(vals=vals)))
+            return 1, lambda s, *, vals: decode_int(encode.encode_string(s(vals=vals)))
         elif body == '$':
-            return 1, vs, lambda n, *, vals: decode_string(encode.encode_int(n(vals=vals)))
+            return 1, lambda n, *, vals: decode_string(encode.encode_int(n(vals=vals)))
         else:
             print_error(f"Unrecognized unary operator: {body}")
     elif indicator == 'B':
         if body == '+':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) + y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) + y(vals=vals)
         elif body == '-':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) - y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) - y(vals=vals)
         elif body == '*':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) * y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) * y(vals=vals)
         elif body == '/':
             def truncated_divide(x: Function[int], y: Function[int], *, vals: ValDict) -> int:
                 quotient, remainder = divmod(x(vals=vals), y(vals=vals))
                 if remainder and quotient < 0:
                     quotient += 1
                 return quotient
-            return 2, vs, truncated_divide
+
+            return 2, truncated_divide
         elif body == '%':
             def stupid_mod(x: Function[int], y: Function[int], *, vals: ValDict) -> int:
                 x_val = x(vals=vals)
@@ -126,51 +109,48 @@ def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
                     result -= y_val
 
                 return result
-            return 2, vs, stupid_mod
+
+            return 2, stupid_mod
         elif body == '<':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) < y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) < y(vals=vals)
         elif body == '>':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) > y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) > y(vals=vals)
         elif body == '=':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) == y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) == y(vals=vals)
         elif body == '|':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) or y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) or y(vals=vals)
         elif body == '&':
-            return 2, vs, lambda x, y, *, vals: x(vals=vals) and y(vals=vals)
+            return 2, lambda x, y, *, vals: x(vals=vals) and y(vals=vals)
         elif body == '.':
-            return 2, vs, lambda x, y, *, vals: ''.join((x(vals=vals), y(vals=vals)))
+            return 2, lambda x, y, *, vals: ''.join((x(vals=vals), y(vals=vals)))
         elif body == 'T':
-            return 2, vs, lambda x, y, *, vals: y(vals=vals)[:x(vals=vals)]
+            return 2, lambda x, y, *, vals: y(vals=vals)[:x(vals=vals)]
         elif body == 'D':
-            return 2, vs, lambda x, y, *, vals: y(vals=vals)[x(vals=vals):]
+            return 2, lambda x, y, *, vals: y(vals=vals)[x(vals=vals):]
         elif body == '$':
-            return 2, vs, lambda f, x, *, vals: f(vals=vals)(partial(x, vals=vals))
+            return 2, lambda f, x, *, vals: f(vals=vals)(transfer_debug_info(x, partial(x, vals=vals)))
         else:
             print_error(f"Unrecognized binary operator: {body}")
     elif indicator == '?':
         if body:
             print_error(f"? must have empty body. Found {body}")
         else:
-            return 3, vs, lambda condition, yes, no, *, vals: yes(vals=vals) if condition(vals=vals) else no(vals=vals)
+            return 3, lambda condition, yes, no, *, vals: yes(vals=vals) if condition(vals=vals) else no(vals=vals)
     elif indicator == 'v':
         v_idx = decode_int(body)
-        return 0, vs, lambda *, vals, idx=v_idx: vals[idx]()
+        return 0, lambda *, vals, idx=v_idx: vals[idx]()
 
     elif indicator == 'L':
         idx = decode_int(body)
-        vs = vs.copy()
-        arg = Const("v" + body)
-        vs[idx] = arg
 
         def lambda_abstraction(f: Function, *, vals: ValDict) -> Callable:
-            vals_captured = vals
-
             def apply(arg_value: Function, *, idx=idx) -> Callable:
-                result = f(vals=vals_captured + (idx, arg_value))
+                result = f(vals=vals + (idx, arg_value))
                 return result
+
             return apply
 
-        return 1, vs, lambda_abstraction
+        return 1, lambda_abstraction
     else:
         raise SyntaxError(f"Unrecognized indicator: {indicator}")
 
