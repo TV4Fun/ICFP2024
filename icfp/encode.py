@@ -1,3 +1,4 @@
+from . import assemble
 from .common import ICFP_CHARSET
 
 
@@ -26,7 +27,7 @@ def encode_message(msg: str) -> str:
                     last_token = tokens.pop()
                     tokens.append("B.")
                     tokens.append(last_token)
-                tokens.append(' '.join(''.join(chars).split()))  # FIXME: There's probably a nicer way to do this.
+                tokens.append(assemble.assemble_message(''.join(chars)))
                 chars = []
             raw = False
         else:
@@ -51,6 +52,11 @@ def encode_string(msg: str) -> str:
 
 def encode_int(value: int) -> str:
     digits_reversed: list[str] = []
+
+    if value < 0:
+        raise ValueError("value must be >= 0")
+    elif value == 0:
+        return '!'
 
     while value > 0:
         digits_reversed.append(encode_digit(value % 94))

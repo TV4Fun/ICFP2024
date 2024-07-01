@@ -1,15 +1,22 @@
 from functools import partial, cache
 from typing import Callable, Optional, Protocol, TypeVar
 
+from . import disassemble, encode
 from .common import print_error, ICFP_CHARSET
-from .encode import encode_string, encode_int
 from .frozen_dict import FrozenDict
 
 T = TypeVar('T', int, str, bool, 'Function', covariant=True)
 
 
 class Function(Protocol[T]):
+    token: str
+    idx: int
     def __call__(self, vals: FrozenDict[int, 'Function']) -> T:
+        ...
+
+
+class IncompleteFunction(Protocol[T]):
+    def __call__(self, *args: Function, vals: FrozenDict[int, 'Function']) -> T:
         ...
 
 
@@ -35,12 +42,17 @@ class OutOfScope:
         raise ValueError(f"Attempt to evaluate out-of-scope variable {self.name}")
 
 
-def decode_message(msg: str) -> str:
+def decode_message(msg: str, read_int: bool = False) -> str:
     tokens = tokenize(msg)
     idx, root = parse_token_tree(tokens, 0, {})
     if idx < len(tokens):
         print_error(f"Unexpected extra tokens: {tokens[idx:]}")
-    return str(root(vals=FrozenDict()))
+
+    decoded_msg = root(vals=FrozenDict())
+    if read_int:
+        return str(decode_int(encode.encode_string(decoded_msg.split()[0])))
+    else:
+        return str(decoded_msg)
 
 
 def tokenize(msg: str) -> list[str]:
@@ -60,14 +72,14 @@ def parse_token_tree(tokens: list[str], idx: int, vs: dict) -> tuple[int, Functi
         closure = partial(f, *args)
     else:
         closure = f
-    closure.token = token
+    closure = cache(closure)
+    closure.token = disassemble.disassemble_token(token)
     closure.idx = idx_orig
-    return idx, cache(closure)
+    return idx, closure
 
 
 def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
-    indicator = token[0]
-    body = token[1:]
+    indicator, body = split_token(token)
 
     if indicator == 'T' or indicator == 'F':
         if body:
@@ -86,9 +98,9 @@ def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
         elif body == '!':
             return 1, vs, lambda x, *, vals: not x(vals=vals)
         elif body == '#':
-            return 1, vs, lambda s, *, vals: decode_int(encode_string(s(vals=vals)))
+            return 1, vs, lambda s, *, vals: decode_int(encode.encode_string(s(vals=vals)))
         elif body == '$':
-            return 1, vs, lambda n, *, vals: decode_string(encode_int(n(vals=vals)))
+            return 1, vs, lambda n, *, vals: decode_string(encode.encode_int(n(vals=vals)))
         else:
             print_error(f"Unrecognized unary operator: {body}")
     elif indicator == 'B':
@@ -160,7 +172,24 @@ def parse_token(token: str, vs: dict) -> tuple[int, dict, Callable]:
 
         return 1, vs, lambda_abstraction
     else:
-        print_error(f"Unsupported token type: {token}")
+        raise SyntaxError(f"Unrecognized indicator: {indicator}")
+
+
+def split_token(token: str) -> tuple[str, str]:
+    return token[0], token[1:]
+
+
+def n_args(indicator: str) -> int:
+    if indicator in {'T', 'F', 'I', 'S', 'v'}:
+        return 0
+    elif indicator in {'U', 'L'}:
+        return 1
+    elif indicator == 'B':
+        return 2
+    elif indicator == '?':
+        return 3
+    else:
+        raise SyntaxError(f"Unrecognized indicator: {indicator}")
 
 
 def decode_int(body: str) -> int:
@@ -182,3 +211,9 @@ def decode_string(body: str) -> str:
 def decode_char(char: str) -> str:
     o = ord(char) - ord('!')
     return ICFP_CHARSET[o]
+
+
+def transfer_debug_info(from_fn: Function, to_fn: Callable) -> Function:
+    to_fn.idx = from_fn.idx
+    to_fn.token = from_fn.token
+    return to_fn

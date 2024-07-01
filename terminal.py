@@ -15,12 +15,16 @@ while True:
     if not command:
         continue
     print_raw = False
-    if command.startswith('!'):
-        print_raw = True
+    decode_int = False
+    while command[0] in {"!", "#"}:
+        if command.startswith('!'):
+            print_raw = True
+        elif command.startswith('#'):
+            decode_int = True
         command = command[1:]
 
     payload = encode_message(command)
     response = requests.post(URL, data=payload, headers=AUTH_HEADER)
     if print_raw:
         print(response.text)
-    print(decode_message(response.text))
+    print(decode_message(response.text, decode_int))

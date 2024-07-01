@@ -18,4 +18,6 @@ map_file = "..//problems/lambdaman5.txt"
 
 G = LambdaMap(map_file)
 
-lazy_path = G.lazy_path()
+lazy_tsp = G.lazy_tsp()
+
+print(f"solve lambdaman5 {lazy_tsp}")
