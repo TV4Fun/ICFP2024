@@ -7,7 +7,8 @@ improve our results.
 # Code Overview
 
 The dates on our various commits should be reasonably accurate as to when the code was written.
-The last commit in the lightning round was 87871051b3f48742bda4952c5d46813c16b1c5e1. We had at that point implemented an ICFP interpreter
+The last commit in the lightning round was https://github.com/TV4Fun/ICFP2024/commit/87871051b3f48742bda4952c5d46813c16b1c5e1.
+We had at that point implemented an ICFP interpreter
 that was good enough to pass the language test, but broke for more complex expressions of lambdas and
 variable capture. We had brute-force solvers for Lambdaman and Spaceship. We were treating Lambdaman as
 a traveling salesman problem and using `networkx` to solve it.
