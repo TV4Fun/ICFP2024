@@ -59,7 +59,18 @@ rewrite our decoder in another language, so we just solved as many problems as w
 
 ## Lambdaman
 
-@deilann, please add some remarks here.
+For the first 24 hours, I focused on ways to represent the lambdaman text maps as a graph. I tried a variety of methods
+to try and combine the fact that it was a covering problem and a path problem. Christofides provided some decent
+results, but the loops were causing trouble in finding a Hamiltonian path as one did not always exist.
+
+I also created a few helper methods to output the paths as a string as my edges were not named.
+
+Some of my time was also spent recognizing that the shortest solution may not have the fewest steps, so I looked at
+how to write repeating characters efficiently in the custom language.
+
+After this, I shifted to using a bitwise map to note edges after that time and implemented a brute force strategy in 
+order to provide solutions for problems not yet solved. I was able to get some slightly more refined solutions after, 
+using Christofides again, which is noted in commits.
 
 ## Spaceship
 
